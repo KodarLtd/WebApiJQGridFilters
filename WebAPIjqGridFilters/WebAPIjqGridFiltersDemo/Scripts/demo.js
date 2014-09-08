@@ -4,6 +4,7 @@
         datatype: "json",
         colNames: ['id', 'Name', 'Address'],
         colModel: [
+            { name: 'Id', index: 'Id', hidden: true, key: true},
             { name: 'Name', index: 'Name', width: 200 },
             { name: 'Address', index: 'Address', width: 300 }
         ],
