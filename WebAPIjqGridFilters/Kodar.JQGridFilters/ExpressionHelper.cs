@@ -293,57 +293,78 @@ namespace Kodar.JQGridFilters
             }
             catch (FormatException ex)
             {
-                throw new FilterExpressionException("Cannot convert value to type " + propertyInfo.GetType().FullName + " for property " + propertyInfo.Name, ex);
+                throw new FilterExpressionException("Cannot convert value to type " + propertyInfo.PropertyType.FullName + " for property " + propertyInfo.Name, ex);
             }
 
         }
         #endregion
 
+        public static IQueryable<TSource> SortBy<TSource, TSortColumn>(this IQueryable<TSource> source, Filter filter, Expression<Func<TSource, TSortColumn>> sortExpression, string sortOrder)
+        {
+            IQueryable<TSource> filteredItems = ApplyFilters(source, filter);
+
+            if (sortOrder == "desc")
+            {
+                return filteredItems.OrderByDescending(sortExpression);
+            }
+            else
+            {
+                return filteredItems.OrderBy(sortExpression);
+            }
+        }
+
         public static IQueryable<TSource> SortBy<TSource>(this IQueryable<TSource> source, Filter filter, string sortingColumn, string sortOrder)
         {
-            ParameterExpression param = Expression.Parameter(typeof(TSource), "s");
-
             IQueryable<TSource> filteredItems = ApplyFilters(source, filter);
+
+            ParameterExpression param = Expression.Parameter(typeof(TSource), "s");
 
             PropertyInfo sortingProperty;
 
             Dictionary<string, PropertyInfo> typeInfo = GetTypeInformation(typeof(TSource));
 
-            string[] propertypPathSegments = sortingColumn.Split('.');
-
-            if (typeInfo.TryGetValue(propertypPathSegments[0], out sortingProperty))
+            if (sortingColumn != null)
             {
-                MemberExpression propertyAccess = Expression.Property(param, sortingProperty.Name);
+                string[] propertypPathSegments = sortingColumn.Split('.');
 
-                //TODO: should check for attributes here or remove all attributes
-                for (int i = 1; i < propertypPathSegments.Length; i++)
+                if (typeInfo.TryGetValue(propertypPathSegments[0], out sortingProperty))
                 {
-                    propertyAccess = Expression.Property(propertyAccess, propertypPathSegments[i]);
-                }
+                    MemberExpression propertyAccess = Expression.Property(param, sortingProperty.Name);
 
-                LambdaExpression orderExpression = Expression.Lambda(propertyAccess, param);
+                    //TODO: should check for attributes here or remove all attributes
+                    for (int i = 1; i < propertypPathSegments.Length; i++)
+                    {
+                        propertyAccess = Expression.Property(propertyAccess, propertypPathSegments[i]);
+                    }
 
-                MethodCallExpression expression = null;
+                    LambdaExpression orderExpression = Expression.Lambda(propertyAccess, param);
 
-                if (sortOrder.ToLower() == "asc")
-                {
-                    expression = Expression.Call(typeof(Queryable), "OrderBy", new Type[] { typeof(TSource), propertyAccess.Type }, filteredItems.Expression, Expression.Quote(orderExpression));
-                }
-                else if (sortOrder.ToLower() == "desc")
-                {
-                    expression = Expression.Call(typeof(Queryable), "OrderByDescending", new Type[] { typeof(TSource), propertyAccess.Type }, filteredItems.Expression, Expression.Quote(orderExpression));
+                    MethodCallExpression expression = null;
+
+                    if (sortOrder.ToLower() == "asc")
+                    {
+                        expression = Expression.Call(typeof(Queryable), "OrderBy", new Type[] { typeof(TSource), propertyAccess.Type }, filteredItems.Expression, Expression.Quote(orderExpression));
+                    }
+                    else if (sortOrder.ToLower() == "desc")
+                    {
+                        expression = Expression.Call(typeof(Queryable), "OrderByDescending", new Type[] { typeof(TSource), propertyAccess.Type }, filteredItems.Expression, Expression.Quote(orderExpression));
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException(sortOrder + " is not a valid sorting order");
+                    }
+
+                    return filteredItems.Provider.CreateQuery<TSource>(expression);
+
                 }
                 else
                 {
-                    throw new InvalidOperationException(sortOrder + " is not a valid sorting order");
+                    throw new FilterExpressionException("Items cannot be sorted by " + sortingColumn + " column");
                 }
-
-                return filteredItems.Provider.CreateQuery<TSource>(expression);
-
             }
             else
             {
-                throw new FilterExpressionException("Items cannot be sorted by " + sortingColumn + " column");
+                return filteredItems;
             }
 
         }
