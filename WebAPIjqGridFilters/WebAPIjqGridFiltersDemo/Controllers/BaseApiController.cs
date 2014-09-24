@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Web;
+using System.Linq.Expressions;
 using System.Web.Http;
+using Kodar.JQGridFilters;
+using Kodar.JQGridFilters.ActionParameters;
 using WebAPIjqGridFiltersDemo.Models;
 
 namespace WebAPIjqGridFiltersDemo.Controllers
@@ -64,5 +66,51 @@ namespace WebAPIjqGridFiltersDemo.Controllers
 
         #endregion
 
+
+        protected ApiResult<TResult> GetDtoResult<TSource, TResult>(IQueryable<TSource> source, int rows, int page, string sidx, string sord, [FromUri]Filter filters, Func<TSource, TResult> selector)
+        {
+            IQueryable<TSource> items = source.SortBy(filters, sidx, sord);
+
+            return GetPagedDtoResult(items, rows, page, sidx, sord, selector);
+        }
+
+        protected ApiResult<TResult> GetDtoResult<TSource, TSortColumn, TResult>(IQueryable<TSource> source, int rows, int page, string sidx, Expression<Func<TSource, TSortColumn>> sortExpression, string sord, [FromUri]Filter filters, Func<TSource, TResult> selector)
+        {
+            IQueryable<TSource> items = source.SortBy(filters, sortExpression, sord);
+
+            return GetPagedDtoResult(items, rows, page, sidx, sord, selector);
+        }
+
+        private ApiResult<TResult> GetPagedDtoResult<TSource, TResult>(IQueryable<TSource> items, int rows, int page, string sidx, string sord, Func<TSource, TResult> selector)
+        {
+            int totalItems = items.Count();
+            //async version
+            //int totalItems = await items.CountAsync();
+            int totalPages = totalItems / rows;
+            if (totalItems % rows > 0)
+            {
+                totalPages++;
+            }
+
+            items = items.Skip((page - 1) * rows).Take(rows);
+
+            List<TSource> listOfItems = items.ToList();
+            //async version
+            //List<TSource> listOfItems = await items.ToListAsync();
+
+            IEnumerable<TResult> dtoItems = from item in listOfItems
+                                            select selector(item);
+
+            return new ApiResult<TResult>
+            {
+                totalPages = totalPages,
+                totalRows = totalItems,
+                rowsPerPage = rows,
+                sortCol = sidx,
+                sortDir = sord,
+                startRow = page,
+                records = dtoItems
+            };
+        }
     }
 }

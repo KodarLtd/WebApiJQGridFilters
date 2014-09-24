@@ -1,13 +1,10 @@
-﻿using Kodar.JQGridFilters;
-using Kodar.JQGridFilters.ActionParameters;
-using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
 using System.Web.Http;
+using Kodar.JQGridFilters;
+using Kodar.JQGridFilters.ActionParameters;
+using Newtonsoft.Json.Linq;
 using WebAPIjqGridFiltersDemo.Models;
 
 namespace WebAPIjqGridFiltersDemo.Controllers
