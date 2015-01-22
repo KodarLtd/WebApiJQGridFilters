@@ -286,6 +286,12 @@ namespace Kodar.JQGridFilters
                 {
                     return Convert.ToBoolean(value);
                 }
+                else if (propertyInfo.PropertyType.IsEnum)
+                {
+                    //TODO convert to other underlying enum types
+                    int intValue = Convert.ToInt32(value);
+                    return Enum.ToObject(propertyInfo.PropertyType, intValue);
+                }
                 else
                 {
                     throw new FilterExpressionException("Cannot compare property " + propertyInfo.Name + " to specified value");

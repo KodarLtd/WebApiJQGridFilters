@@ -74,6 +74,8 @@ namespace WebAPIjqGridFiltersDemo.Controllers
             return GetPagedDtoResult(items, rows, page, sidx, sord, selector);
         }
 
+
+        //This overload can be used to specify custom sorting not represented or not supported by the jqGrid sort expression
         protected ApiResult<TResult> GetDtoResult<TSource, TSortColumn, TResult>(IQueryable<TSource> source, int rows, int page, string sidx, Expression<Func<TSource, TSortColumn>> sortExpression, string sord, [FromUri]Filter filters, Func<TSource, TResult> selector)
         {
             IQueryable<TSource> items = source.SortBy(filters, sortExpression, sord);
